@@ -1,0 +1,42 @@
+# playerGameTitleChangeAfterEventSignal
+Gestisce i listener associati al cambiamento del Titolo di Gioco di un giocatore.
+Questo segnale fa parte di UltimateCraft.afterEvents e viene attivato immediatamente dopo che il database e le statistiche del giocatore sono stati aggiornati con il nuovo titolo.
+## Metodi
+### subscribe
+
+`subscribe(callback: (arg: playerGameTitleChangeAfterEvent) => void): (arg: playerGameTitleChangeAfterEvent) => void`
+
+Iscrive una funzione di callback che verrà eseguita ogni volta che un giocatore equipaggia, cambia o rimuove un Titolo di Gioco.
+
+### Parametri
+`callback: (arg: playerGameTitleChangeAfterEvent) => void`
+La funzione da chiamare quando l'evento viene innescato. Riceve come argomento un oggetto playerGameTitleChangeAfterEvent.
+
+### Valore Restituito
+`Ritorna la funzione callback stessa. Questo valore è utile per salvare il riferimento e poterlo utilizzare successivamente con il metodo unsubscribe.`
+
+### unsubscribe
+`unsubscribe(callback: (arg: playerGameTitleChangeAfterEvent) => void): void`
+Rimuove una funzione di callback precedentemente iscritta, interrompendo l'ascolto dell'evento.
+### Parametri
+`callback: (arg: playerGameTitleChangeAfterEvent) => void`
+L'esatto riferimento alla funzione passata in precedenza al metodo subscribe().
+## Esempi
+Notifica in Chat al cambio titolo
+```js
+import { UltimateCraft } from "ultimatecraft-server-bedrock-libraries";
+
+// Iscriviamo la nostra funzione all'evento
+const callback = UltimateCraft.afterEvents.gameTitleChange.subscribe((event) => {
+    const { player, newTitleUUID } = event;
+    
+    if (newTitleUUID) {
+        player.sendMessage("§aHai equipaggiato un nuovo titolo!");
+    } else {
+        player.sendMessage("§eHai rimosso il tuo titolo.");
+    }
+});
+
+// Esempio: Rimozione dell'evento (es. quando un mini-gioco finisce)
+// UltimateCraft.afterEvents.gameTitleChange.unsubscribe(callback);
+```
