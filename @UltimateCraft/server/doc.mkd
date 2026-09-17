@@ -1,0 +1,5 @@
+# @UltimateCraft/server Library (v0.0.1)
+This Library has been created to ease developing on official UltimateCraft Server plug-ins.
+
+## Elements
+- [UltimateCraft](https://google.com)
