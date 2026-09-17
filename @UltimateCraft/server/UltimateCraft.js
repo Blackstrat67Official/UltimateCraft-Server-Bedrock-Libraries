@@ -70,16 +70,15 @@ export const UltimateCraftEvents = {
      * Sola lettura, non possono essere cancellati.
      */
     afterEvents: {
-        // Quando un giocatore equipaggia, cambia o rimuove un titolo
-        gameTitleChange: new EventSignal(),
-        
-        // Quando un giocatore avanza di livello / rank
+        playerBanned: new EventSignal(),
+        playerGameTitleChange: new EventSignal(),
         playerRankUp: new EventSignal(),
-        
-        // Quando un giocatore cambia un'impostazione dal pannello account
         playerSettingsChange: new EventSignal(),
-
-        // Quando il giocatore completa una missione
+        playerRegistered: new EventSignal(),
+        gameTitleCreated: new EventSignal(),
+        gameTitleEdited: new EventSignal(),
+        gameTitleDeleted: new EventSignal(),
+        gameTitleAssigned: new EventSignal(),
         questCompleted: new EventSignal()
     },
 
@@ -87,10 +86,7 @@ export const UltimateCraftEvents = {
      * Eventi che si verificano PRIMA che l'azione avvenga.
      * Possono essere cancellati impostando `event.cancel = true` all'interno della callback.
      */
-    beforeEvents: {
-        // Esempio: Prima che avvenga uno scambio (Trade) tra due giocatori
-        playerTradeAccept: new EventSignal()
-    }
+    beforeEvents: {}
 };
 
 /**
