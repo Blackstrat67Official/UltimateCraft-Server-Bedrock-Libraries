@@ -4,7 +4,7 @@ Questo segnale fa parte di UltimateCraft.afterEvents e viene attivato immediatam
 ## Metodi
 ### subscribe
 
-`subscribe(callback: (arg: playerGameTitleChangeAfterEvent) => void): (arg: playerGameTitleChangeAfterEvent) => void`
+`subscribe(callback: (arg: playerGameTitleChangeAfterEvent) => void): (arg: [playerGameTitleChangeAfterEvent](...)) => void`
 
 Iscrive una funzione di callback che verrà eseguita ogni volta che un giocatore equipaggia, cambia o rimuove un Titolo di Gioco.
 
