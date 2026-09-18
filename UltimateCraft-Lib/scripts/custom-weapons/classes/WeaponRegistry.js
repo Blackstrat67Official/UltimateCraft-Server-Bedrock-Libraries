@@ -1,6 +1,6 @@
 import { world, system, EquipmentSlot } from "@minecraft/server";
-import { getMainhand, setEquipment } from "../../utils/equipment.js";
-import { WeaponEvent } from "../../classes/WeaponEvent.js";
+import { getMainhand, setEquipment } from "../utils/equipment.js";
+import { WeaponEvent } from "./WeaponEvent.js";
 
 // Mappa che conterrà tutte le armi registrate tramite il WeaponBuilder
 const weapons = new Map();
