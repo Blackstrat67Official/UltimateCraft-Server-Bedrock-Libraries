@@ -1,6 +1,6 @@
 import { world, system, EquipmentSlot } from "@minecraft/server";
-import { getMainhand, setEquipment } from "../../utils/equipment.js";
-import { Event } from "../../classes/Event.js";
+import { getMainhand, setEquipment } from "../utils/equipment.js";
+import { Event } from "../classes/Event.js";
 
 const weapons = new Map();
 
