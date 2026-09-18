@@ -1,9 +1,13 @@
 import { world, system, EquipmentSlot } from "@minecraft/server";
 import { getMainhand, setEquipment } from "../../utils/equipment.js";
-import { Event } from "../../classes/WeaponEvent.js";
+import { WeaponEvent } from "../../classes/WeaponEvent.js";
 
+// Mappa che conterrà tutte le armi registrate tramite il WeaponBuilder
 const weapons = new Map();
 
+/**
+ * Genera la barra del cooldown per la action bar.
+ */
 function getProgressBar(current, max, bars = 20) {
     const fill = Math.round((current / max) * bars);
     const empty = bars - fill;
@@ -11,13 +15,18 @@ function getProgressBar(current, max, bars = 20) {
 }
 
 export class WeaponRegistry {
-    // Registra un WeaponBuilder nel motore
+    /**
+     * Registra un WeaponBuilder nel motore centrale.
+     * @param {Object} weaponBuilder L'arma costruita.
+     */
     static register(weaponBuilder) {
         weapons.set(weaponBuilder.id, weaponBuilder);
     }
 }
 
-// === IL MOTORE (GIRA IN BACKGROUND) ===
+// ==========================================
+// IL MOTORE (GIRA IN BACKGROUND AUTOMATICAMENTE)
+// ==========================================
 
 // 1. GESTIONE AUREE PASSIVE E COOLDOWN UI
 system.runInterval(() => {
@@ -28,7 +37,7 @@ system.runInterval(() => {
         const weapon = weapons.get(held.typeId);
         if (!weapon) continue;
 
-        // Gestione Automatica della UI del Cooldown
+        // --- Gestione Automatica della UI del Cooldown ---
         if (weapon.cooldownTicks > 0) {
             const cooldownEnd = held.getDynamicProperty("active_cd_end");
             if (cooldownEnd && system.currentTick < cooldownEnd) {
@@ -43,9 +52,18 @@ system.runInterval(() => {
             }
         }
 
-        // Esegue l'aura passiva definita nel builder
+        // --- Esecuzione Aura Passiva ---
         if (weapon.passiveTick) {
             weapon.passiveTick(player, system.currentTick);
+            
+            // Notifica il sistema che un tick passivo è avvenuto
+            WeaponEvent.afterEvents.passiveTick.trigger({
+                player: player, 
+                item: held, 
+                slot: EquipmentSlot.Mainhand, 
+                rarity: weapon.rarity, 
+                tick: system.currentTick
+            });
         }
     }
 }, 2);
@@ -61,14 +79,26 @@ world.afterEvents.entityHitEntity.subscribe((ev) => {
     const weapon = weapons.get(held.typeId);
     if (!weapon) return;
 
-    // Emette l'XP base in automatico!
-    Event.emit("weaponOnBasicAttackEvent", { player: attacker, item: held, slot: EquipmentSlot.Mainhand, rarity: weapon.rarity });
+    const eventData = { 
+        player: attacker, 
+        target: target, 
+        item: held, 
+        slot: EquipmentSlot.Mainhand, 
+        rarity: weapon.rarity 
+    };
 
-    // Esegue la logica specifica dell'arma
+    // --- BEFORE EVENT: Controlla se l'attacco è stato annullato da qualche altro script ---
+    const isCanceled = WeaponEvent.beforeEvents.basicAttack.trigger(eventData);
+    if (isCanceled) return;
+
+    // --- ESECUZIONE ATTACCO ARMA ---
     if (weapon.onHit) {
-        // Passiamo anche l'Event per permettere di triggerare il drop XP passivo secondario
-        weapon.onHit(attacker, target, held, Event); 
+        // Passiamo WeaponEvent all'arma in modo che, se entra un colpo critico, possa triggerare WeaponEvent.afterEvents.chanceAttack
+        weapon.onHit(attacker, target, held, WeaponEvent); 
     }
+
+    // --- AFTER EVENT: Notifica che l'attacco è andato a buon fine ---
+    WeaponEvent.afterEvents.basicAttack.trigger(eventData);
 });
 
 // 3. GESTIONE ABILITÀ (CLICK DESTRO)
@@ -82,14 +112,25 @@ world.afterEvents.itemUse.subscribe((ev) => {
     const weapon = weapons.get(held.typeId);
     if (!weapon || !weapon.activeAbility) return;
 
-    // Controllo automatico del Cooldown
+    // --- Controllo automatico del Cooldown ---
     const cooldownEnd = held.getDynamicProperty("active_cd_end");
     if (cooldownEnd && system.currentTick < cooldownEnd) {
         player.dimension.playSound("note.bass", player.location, { pitch: 0.4 });
         return;
     }
 
-    // Consumo automatico della durabilità
+    const eventData = { 
+        player: player, 
+        item: held, 
+        slot: EquipmentSlot.Mainhand, 
+        rarity: weapon.rarity 
+    };
+
+    // --- BEFORE EVENT: Controlla se l'abilità è stata annullata ---
+    const isCanceled = WeaponEvent.beforeEvents.abilityUse.trigger(eventData);
+    if (isCanceled) return; // Bloccato! Niente consumo di cooldown o durabilità
+
+    // --- CONSUMO AUTOMATICO DURABILITÀ & IMPOSTAZIONE COOLDOWN ---
     if (weapon.durabilityCost > 0) {
         const durability = held.getComponent("durability");
         if (durability) {
@@ -97,17 +138,19 @@ world.afterEvents.itemUse.subscribe((ev) => {
             if (durability.damage >= durability.maxDurability) {
                 player.dimension.playSound("random.break", player.location);
                 setEquipment(player, EquipmentSlot.Mainhand, undefined); 
-                return;
             } else {
                 held.setDynamicProperty("active_cd_end", system.currentTick + weapon.cooldownTicks);
                 setEquipment(player, EquipmentSlot.Mainhand, held);
             }
         }
+    } else if (weapon.cooldownTicks > 0) {
+        held.setDynamicProperty("active_cd_end", system.currentTick + weapon.cooldownTicks);
+        setEquipment(player, EquipmentSlot.Mainhand, held);
     }
 
-    // Emette l'XP dell'abilità in automatico!
-    Event.emit("weaponOnAbilityAttackEvent", { player: player, item: held, slot: EquipmentSlot.Mainhand, rarity: weapon.rarity });
-
-    // Esegue il potere vero e proprio
+    // --- ESECUZIONE ABILITÀ ---
     weapon.activeAbility(player, held);
+
+    // --- AFTER EVENT: Notifica che l'abilità è stata lanciata con successo ---
+    WeaponEvent.afterEvents.abilityUse.trigger(eventData);
 });
