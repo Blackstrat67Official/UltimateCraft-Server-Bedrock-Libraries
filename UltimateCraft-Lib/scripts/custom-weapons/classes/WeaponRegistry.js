@@ -31,11 +31,29 @@ export class WeaponRegistry {
 // 1. GESTIONE AUREE PASSIVE E COOLDOWN UI
 system.runInterval(() => {
     for (const player of world.getPlayers()) {
-        const held = getMainhand(player);
-        if (!held) continue;
+        let held = getMainhand(player);
+        let slot = EquipmentSlot.Mainhand;
+        let weapon = held ? weapons.get(held.typeId) : null;
 
-        const weapon = weapons.get(held.typeId);
-        if (!weapon) continue;
+        // --- Controllo Mano Secondaria (Offhand) ---
+        if (!weapon) {
+            const offheld = getOffhand(player);
+            const offWeapon = offheld ? weapons.get(offheld.typeId) : null;
+            if (offWeapon && offWeapon.worksInOffhand) {
+                held = offheld;
+                weapon = offWeapon;
+                slot = EquipmentSlot.Offhand;
+            }
+        }
+
+        if (!weapon || !held) continue;
+
+        // --- Applicazione Effetti Passivi (Es. Resistenza al Fuoco) ---
+        if (weapon.passiveEffects) {
+            for (const effect of weapon.passiveEffects) {
+                player.addEffect(effect.name, effect.duration, { amplifier: effect.amplifier, showParticles: effect.showParticles });
+            }
+        }
 
         // --- Gestione Automatica della UI del Cooldown ---
         if (weapon.cooldownTicks > 0) {
@@ -60,7 +78,7 @@ system.runInterval(() => {
             WeaponEvent.afterEvents.passiveTick.trigger({
                 player: player, 
                 item: held, 
-                slot: EquipmentSlot.Mainhand, 
+                slot: slot, 
                 rarity: weapon.rarity, 
                 tick: system.currentTick
             });
@@ -153,4 +171,31 @@ world.afterEvents.itemUse.subscribe((ev) => {
 
     // --- AFTER EVENT: Notifica che l'abilità è stata lanciata con successo ---
     WeaponEvent.afterEvents.abilityUse.trigger(eventData);
+});
+
+// 4. GESTIONE DANNI SUBITI (ON HURT)
+world.afterEvents.entityHurt.subscribe((ev) => {
+    const player = ev.hurtEntity;
+    if (player.typeId !== "minecraft:player") return;
+
+    let held = getMainhand(player);
+    let slot = EquipmentSlot.Mainhand;
+    let weapon = held ? weapons.get(held.typeId) : null;
+
+    // Controlla anche la mano secondaria se l'arma lo permette
+    if (!weapon) {
+        const offheld = getOffhand(player);
+        const offWeapon = offheld ? weapons.get(offheld.typeId) : null;
+        if (offWeapon && offWeapon.worksInOffhand) {
+            held = offheld;
+            weapon = offWeapon;
+            slot = EquipmentSlot.Offhand;
+        }
+    }
+
+    // Se l'arma non ha una logica "onHurt", interrompe
+    if (!weapon || !held || !weapon.onHurt) return;
+
+    // Esegue la logica difensiva dell'arma (es. Totem dell'Axe of Undying)
+    weapon.onHurt(player, ev.damageSource, held, WeaponEvent);
 });
