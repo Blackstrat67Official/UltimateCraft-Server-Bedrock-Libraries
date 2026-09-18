@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "UltimateCraft Core",
+    "description": "Libreria principale",
+    "uuid": "963f9b4d-3b56-4229-9915-125ef5092ea7",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "description": "Server API",
+      "type": "script",
+      "language": "javascript",
+      "uuid": "64905a84-ee4f-4aa0-87ab-553a5f567d78",
+      "version": [1, 0, 0],
+      "entry": "scripts/server/lib.js",
+      "module_name": "@UltimateCraft/server"
+    },
+    {
+      "description": "Weapons API",
+      "type": "script",
+      "language": "javascript",
+      "uuid": "211d87a8-9443-40c3-a024-40fbd00f889f",
+      "version": [1, 0, 0],
+      "entry": "scripts/custom-weapons/lib.js",
+      "module_name": "@UltimateCraft/custom-weapons"
+    }
+  ]
+}
